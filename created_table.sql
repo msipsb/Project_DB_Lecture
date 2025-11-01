@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS orders (
 -- COMMENT: This SQL statement creates a table named 'products' with various columns to store product information, including foreign key references to the 'aisles', 'departments', and 'retailer' tables.
 CREATE TABLE IF NOT EXISTS products (
     product_ID INT unsigned not null AUTO_INCREMENT,
-    product_name VARCHAR(100) NOT NULL,
+    product_name VARCHAR(150) NOT NULL,
     aisle_ID INT unsigned NOT NULL,
     department_ID INT unsigned NOT NULL,
     retailer_ID INT unsigned NOT NULL,
@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS order_products (
     product_ID INT unsigned not null,
     review_ID INT unsigned not null,
     add_to_cart_order INT unsigned NOT NULL,
-    reordered BIT NOT NULL,
+    reordered INT NOT NULL,
     primary key (order_ID, product_ID, review_ID),
     constraint FK_order_products_review FOREIGN KEY (review_ID) REFERENCES review(review_ID),
     CONSTRAINT FK_order_products_orders FOREIGN KEY (order_ID) REFERENCES orders(order_ID),
@@ -224,7 +224,7 @@ CREATE TABLE IF NOT EXISTS delivery (
     CONSTRAINT FK_delivery_orders FOREIGN KEY (order_ID) REFERENCES orders(order_ID)
 );
 
---- 18th table creations
+-- 18th table creations
 -- COMMENT: This SQL statement creates a table named 'address' with various columns to store address
 CREATE TABLE IF NOT EXISTS address (
     address_ID INT unsigned not null AUTO_INCREMENT,
