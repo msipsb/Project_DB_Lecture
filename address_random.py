@@ -64,9 +64,7 @@ def generate_address_rows(num_customers=300, max_addresses_per_customer=3):
         for _ in range(num_addresses):
             addr = random.choice(thai_addresses)
             house_number = generate_house_number()
-            created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            updated_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S') if random.random() < 0.7 else "NULL"
-            row = f"({address_id}, {customer_id}, '{house_number}', '{addr['street']}', '{addr['city']}', '{addr['province']}', '{addr['postal_code']}', '{addr['country']}', '{created_at}', {f'\'{updated_at}\'' if updated_at != 'NULL' else updated_at})"
+            row = f"({address_id}, {customer_id}, '{house_number}', '{addr['street']}', '{addr['city']}', '{addr['province']}', '{addr['postal_code']}', '{addr['country']}')"
             rows.append(row)
             address_id += 1
     return rows
@@ -74,7 +72,7 @@ def generate_address_rows(num_customers=300, max_addresses_per_customer=3):
 # Generate SQL INSERT statement
 def generate_sql_insert():
     rows = generate_address_rows()
-    sql = "INSERT INTO address (address_ID, customer_ID, house_number, street, city, province, postal_code, country, created_at, updated_at) VALUES\n"
+    sql = "INSERT INTO address (address_ID, customer_ID, house_number, street, city, province, postal_code, country) VALUES\n"
     sql += ",\n".join(rows) + ";"
     return sql
 
