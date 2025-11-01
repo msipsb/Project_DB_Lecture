@@ -4,7 +4,7 @@ FIELDS TERMINATED BY ','
 OPTIONALLY ENCLOSED BY '"'
 LINES TERMINATED BY '\r\n'
 IGNORE 1 ROWS
-(payment_ID, order_ID, customer_ID, payment_method, amount, currency, payment_date, @status)
+(payment_ID, order_ID, customer_ID, amount, payment_date, @status)
 SET status = TRIM(@status);
 
 
