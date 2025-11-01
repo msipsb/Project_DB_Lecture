@@ -233,8 +233,6 @@ CREATE TABLE IF NOT EXISTS address (
     province VARCHAR(50) NOT NULL,
     postal_code VARCHAR(10) NOT NULL,
     country VARCHAR(50) NOT NULL,
-    created_at DATETIME NOT NULL default CURRENT_TIMESTAMP,
-    updated_at DATETIME,
-    primary key (address_ID, customer_ID, house_number, street, city),
+    primary key (address_ID, customer_ID, house_number, street, city, province, postal_code, country),
     CONSTRAINT FK_address_customer FOREIGN KEY (customer_ID) REFERENCES customer(customer_ID)
 );
