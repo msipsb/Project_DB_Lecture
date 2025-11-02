@@ -75,6 +75,6 @@ def generate_sql_insert():
     sql = "INSERT INTO address (address_ID, customer_ID, house_number, street, city, province, postal_code, country) VALUES\n"
     sql += ",\n".join(rows) + ";"
     return sql
-
+print()
 # Output the SQL
 print(generate_sql_insert())
