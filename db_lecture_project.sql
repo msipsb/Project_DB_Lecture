@@ -27,6 +27,9 @@ SET time_zone = "+00:00";
 -- Table structure for table `address`
 --
 
+CREATE DATABASE db_lecture_project;
+USE db_lecture_project;
+
 CREATE TABLE `address` (
   `address_ID` int(10) UNSIGNED NOT NULL,
   `customer_ID` int(10) UNSIGNED NOT NULL,
