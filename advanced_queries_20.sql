@@ -647,6 +647,41 @@ JOIN (
 GROUP BY customer_tier
 ORDER BY total_payment_amount DESC;
 
+-- ============================================================================
+-- ADVANCED QUERY 21: RETAILER SALES PERFORMANCE SUMMARY
+-- ============================================================================
+-- BUSINESS VALUE:
+--   Shows total sales and order volume for each retailer
+--   Identifies top-performing retailers by revenue
+-- DECISION SUPPORT:
+--   - Find most valuable retailer partnerships
+--   - Compare retailer contribution to business
+-- ============================================================================
+SELECT -- 4.5 5 4.5 4.5 4.5 4 = 4.5833
+    r.retailer_ID,
+    CONCAT(c.first_name, ' ', c.last_name) AS retailer_name,
+    r.account_name,
+    COUNT(DISTINCT p.product_ID) AS products_supplied,
+    COUNT(DISTINCT op.order_ID) AS total_orders,
+    ROUND(SUM(i.total_amount), 2) AS total_revenue,
+    ROUND(AVG(i.total_amount), 2) AS avg_order_value,
+    ROUND(AVG(rev.rating), 2) AS avg_product_rating,
+    CASE
+        WHEN SUM(i.total_amount) >= 50000 THEN 'Top Tier'
+        WHEN SUM(i.total_amount) >= 20000 THEN 'Mid Tier'
+        ELSE 'Standard'
+    END AS retailer_tier
+FROM retailer r
+JOIN customer c ON r.retailer_ID = c.customer_ID
+JOIN products p ON r.retailer_ID = p.retailer_ID
+JOIN order_products op ON p.product_ID = op.product_ID
+JOIN orders o ON op.order_ID = o.order_ID
+JOIN invoice i ON o.order_ID = i.order_ID
+LEFT JOIN review rev ON op.review_ID = rev.review_ID
+GROUP BY r.retailer_ID, c.first_name, c.last_name, r.account_name
+HAVING total_orders >= 5
+ORDER BY total_revenue DESC;
+
 -- ======================================================================
--- END OF 20 ADVANCED QUERIES
+-- END OF 21 ADVANCED QUERIES
 -- ======================================================================
