@@ -27,7 +27,7 @@
 --   - Segment customers by registration period for cohort analysis
 -- ============================================================================
 -- 1. List all customers with their email and phone number
-SELECT 
+SELECT -- 2.5
     customer_ID,
     CONCAT(first_name, ' ', last_name) AS full_name,
     email,
@@ -50,424 +50,322 @@ ORDER BY registration_date DESC;
 --   - Identify opportunities for cross-selling within categories
 -- ============================================================================
 -- 2. Find all products in the Bakery Desserts aisle
-SELECT 
+SELECT -- 3 3 2 3 3 = 3
     p.product_ID,
     p.product_name,
-    p.price,
     a.aisle
 FROM products p
 JOIN aisles a ON p.aisle_ID = a.aisle_ID
 WHERE a.aisle = 'bakery desserts'
 ORDER BY p.product_name;
 
--- ============================================================================
--- QUERY 3: CUSTOMER VALUE & PURCHASE FREQUENCY ANALYSIS
--- ============================================================================
--- BUSINESS VALUE:
---   - Identifies high-value customers vs. low-frequency customers
---   - Critical for customer lifetime value (CLV) calculations
---   - Supports VIP customer identification and special treatment programs
---   - Enables personalized marketing based on purchase behavior
--- DECISION SUPPORT:
---   - Allocate marketing budget to high-value customers
---   - Design retention programs for at-risk customers
---   - Prioritize service improvements for high-frequency buyers
---   - Identify potential churn risk among loyal customers
--- ============================================================================
--- 3. Get total orders count and average order value by customer
-SELECT 
+-- PART 1: 12 BASIC MEANINGFUL QUERIES
+
+-- Basic 1: List all customers with contact info and registration date
+-- Useful for marketing lists and customer service
+SELECT -- maybe
+    customer_ID,
+    CONCAT(first_name, IFNULL(CONCAT(' ', middle_name), ''), ' ', last_name) AS full_name,
+    email,
+    phone_number,
+    registration_date,
+    last_login_date
+FROM customer
+ORDER BY registration_date DESC;
+
+-- Basic 2: Count customers by province (from address)
+-- Helps with geographic market sizing / regional focus
+SELECT -- 4 5 4.5 4 4 4 = 4
+    a.province,
+    COUNT(DISTINCT a.customer_ID) AS customer_count
+FROM address a
+GROUP BY a.province
+ORDER BY customer_count DESC;
+
+-- Basic 3: Orders count and average invoice amount per customer
+-- Uses invoice.total_amount (average invoice value per customer)
+SELECT -- advance -- 5 5 5 5 5 5 = 5
     c.customer_ID,
     CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
-    COUNT(o.order_ID) AS total_orders,
-    ROUND(AVG(o.order_total), 2) AS avg_order_value
+    COUNT(DISTINCT o.order_ID) AS orders_count,
+    IFNULL(ROUND(AVG(i.total_amount),2), 0) AS avg_invoice_amount
 FROM customer c
 LEFT JOIN orders o ON c.customer_ID = o.customer_ID
+LEFT JOIN invoice i ON o.order_ID = i.order_ID
 GROUP BY c.customer_ID, c.first_name, c.last_name
-HAVING total_orders > 0
-ORDER BY total_orders DESC;
+ORDER BY orders_count DESC;
 
--- ============================================================================
--- QUERY 4: LOGISTICS & DELIVERY PERFORMANCE MONITORING
--- ============================================================================
--- BUSINESS VALUE:
---   - Monitors delivery performance and identifies bottlenecks
---   - Essential for customer satisfaction and service level agreements (SLAs)
---   - Helps optimize logistics operations and reduce fulfillment costs
---   - Identifies delayed shipments that need management attention
--- DECISION SUPPORT:
---   - Adjust delivery partner capacity based on pending order volume
---   - Implement early warning system for delayed deliveries
---   - Negotiate SLAs with logistics providers
--- ============================================================================
--- 4. View pending deliveries
-SELECT 
+-- Basic 4: Cancelled deliveries (delivery.status = 'Cancelled')
+-- Operational view for fulfillment team
+SELECT -- 3.5 4 3.5 4 3 3.5 = 3.5
     d.delivery_ID,
     d.order_ID,
-    o.order_date,
     d.scheduled_date,
     d.status
 FROM delivery d
-JOIN orders o ON d.order_ID = o.order_ID
-WHERE d.status = 'Pending'
-ORDER BY d.scheduled_date;
+WHERE d.status = 'Cancelled'
+ORDER BY d.scheduled_date ASC;
 
--- ============================================================================
--- QUERY 5: GEOGRAPHIC MARKET ANALYSIS & EXPANSION PLANNING
--- ============================================================================
--- BUSINESS VALUE:
---   - Analyzes geographic distribution of customer base
---   - Supports regional expansion and market penetration strategies
---   - Identifies regional service gaps and opportunities
---   - Enables localized marketing and inventory decisions
--- DECISION SUPPORT:
---   - Plan regional warehouse locations based on customer concentration
---   - Develop region-specific marketing campaigns
---   - Allocate inventory based on regional demand patterns
--- ============================================================================
--- 5. Get customer address information
-SELECT 
-    CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
-    a.house_number,
-    a.street,
-    a.city,
-    a.province,
-    a.postal_code,
-    a.country
-FROM customer c
-JOIN address a ON c.customer_ID = a.customer_ID
-WHERE a.country = 'Thailand'
-ORDER BY a.city;
-
--- ============================================================================
--- QUERY 6: PREMIUM PRODUCT PRICING & MARGIN ANALYSIS
--- ============================================================================
--- BUSINESS VALUE:
---   - Identifies premium product segment for strategic focus
---   - Supports pricing optimization and margin management
---   - Helps understand product portfolio value distribution
---   - Informs inventory stocking decisions for high-margin items
--- DECISION SUPPORT:
---   - Increase marketing focus on high-margin products
---   - Negotiate better margins with suppliers for bulk items
---   - Create exclusive sections for premium products
--- ============================================================================
--- 6. Find top 10 most expensive products
-SELECT 
-    product_ID,
-    product_name,
-    price,
-    (SELECT aisle FROM aisles WHERE aisle_ID = products.aisle_ID) AS aisle_name
-FROM products
-ORDER BY price DESC
-LIMIT 10;
-
--- ============================================================================
--- QUERY 7: DEPARTMENT PERFORMANCE & PRODUCT MIX ANALYSIS
--- ============================================================================
--- BUSINESS VALUE:
---   - Evaluates department-level performance metrics
---   - Identifies underperforming departments requiring attention
---   - Supports inventory allocation decisions across departments
---   - Enables benchmarking and comparative analysis
--- DECISION SUPPORT:
---   - Allocate shelf space based on product count and margins
---   - Identify departments with pricing power (high average prices)
---   - Plan promotions for departments with low average pricing
--- ============================================================================
--- 7. Count products by department
-SELECT 
+-- Basic 5: Product counts by department
+-- Measures SKU distribution across departments
+SELECT -- 3 4 3.5 3.5 3.5 3.5 = 3.5
     d.department_ID,
     d.department,
-    COUNT(p.product_ID) AS product_count,
-    ROUND(AVG(p.price), 2) AS avg_price
+    COUNT(p.product_ID) AS product_count
 FROM departments d
 LEFT JOIN products p ON d.department_ID = p.department_ID
 GROUP BY d.department_ID, d.department
 ORDER BY product_count DESC;
 
--- ============================================================================
--- QUERY 8: RECENT SALES PERFORMANCE & SHORT-TERM TRENDS
--- ============================================================================
--- BUSINESS VALUE:
---   - Monitors recent sales activity and short-term trends
---   - Identifies current best-sellers and emerging trends
---   - Supports fast-response inventory replenishment
---   - Enables real-time business performance tracking
--- DECISION SUPPORT:
---   - Quickly identify and capitalize on emerging trends
---   - Adjust promotional calendars based on recent demand
---   - Monitor impact of recent marketing campaigns
--- ============================================================================
--- 8. Get all orders placed in the last 30 days
-SELECT 
-    o.order_ID,
-    c.email,
-    o.order_date,
-    o.order_total,
-    o.order_status
+-- Basic 6: Order volume by day-of-week (orders.order_dow)
+-- Shows busiest weekdays to staff operations accordingly
+SELECT -- 4.5 4 3.5 4.5 4.5 = 4.25
+    o.order_dow AS day_of_week,
+    COUNT(*) AS orders_count
 FROM orders o
-JOIN customer c ON o.customer_ID = c.customer_ID
-WHERE o.order_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-ORDER BY o.order_date DESC;
+GROUP BY o.order_dow
+ORDER BY orders_count DESC;
 
--- ============================================================================
--- QUERY 9: FULFILLMENT SUCCESS TRACKING & CUSTOMER SATISFACTION
--- ============================================================================
--- BUSINESS VALUE:
---   - Tracks successful order fulfillment and delivery completion
---   - Critical metric for customer satisfaction and retention
---   - Identifies potential service issues with specific customers
---   - Enables revenue confirmation and cash flow forecasting
--- DECISION SUPPORT:
---   - Track fulfillment rate for performance incentives
---   - Identify customers with delayed deliveries for follow-up
---   - Correlate delivery time with customer satisfaction
--- ============================================================================
--- 9. List all delivered orders with customer details
-SELECT 
-    d.delivery_ID,
-    d.order_ID,
-    CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
-    d.actual_delivery_date,
-    o.order_total
-FROM delivery d
-JOIN orders o ON d.order_ID = o.order_ID
-JOIN customer c ON o.customer_ID = c.customer_ID
-WHERE d.status = 'Delivered'
-ORDER BY d.actual_delivery_date DESC;
+-- Basic 7: Loyalty membership distribution by tier (from loyalty_membership)
+SELECT  -- 2 2.5 2.5 3 3 2 = 2.5
+    tier_level,
+    COUNT(membership_ID) AS members
+FROM loyalty_membership
+GROUP BY tier_level;
 
--- ============================================================================
--- QUERY 10: SUPPLY CHAIN RISK MANAGEMENT & STOCKOUT PREVENTION
--- ============================================================================
--- BUSINESS VALUE:
---   - Identifies products at risk of stockout
---   - Prevents revenue loss from out-of-stock situations
---   - Optimizes inventory levels and working capital
---   - Supports just-in-time inventory management
--- DECISION SUPPORT:
---   - Trigger automated purchase orders for low-stock items
---   - Identify products requiring safety stock increases
---   - Plan supplier communications for urgent replenishment
--- ============================================================================
--- 10. Show products with low inventory
-SELECT 
-    ir.inventory_record_ID,
-    p.product_ID,
+-- Basic 8: Dormant customers: last login more than 90 days ago
+-- Useful for reactivation campaigns
+SELECT -- 4.5 4.5 4 5 4 4 = 4.5
+    customer_ID,
+    CONCAT(first_name,' ', last_name) AS customer_name,
+    last_login_date,
+    DATEDIFF(NOW(), last_login_date) AS days_since_login
+FROM customer
+WHERE last_login_date IS NOT NULL
+    AND DATEDIFF(NOW(), last_login_date) > 30 -- 30 30 30 30 45 30 = 45
+ORDER BY days_since_login DESC;
+
+-- Basic 9: Products with low inventory (quantity_on_hand <= reorder_level)
+SELECT -- 4 4 4 4 4 4 444 4 44444444 = 4 
+    ir.inventory_ID,
+    ir.product_ID,
     p.product_name,
     ir.quantity_on_hand,
-    ir.reorder_point,
-    CASE 
-        WHEN ir.quantity_on_hand <= ir.reorder_point THEN 'Reorder Needed'
-        ELSE 'Sufficient Stock'
-    END AS stock_status
+    ir.reorder_level
 FROM inventory_record ir
 JOIN products p ON ir.product_ID = p.product_ID
-WHERE ir.quantity_on_hand <= ir.reorder_point
-ORDER BY ir.quantity_on_hand;
+WHERE ir.quantity_on_hand <= ir.reorder_level
+ORDER BY ir.quantity_on_hand ASC;
 
--- ============================================================================
--- QUERY 11: LOYALTY PROGRAM PORTFOLIO ANALYSIS & MEMBER DISTRIBUTION
--- ============================================================================
--- BUSINESS VALUE:
---   - Monitors loyalty program health and member distribution
---   - Measures effectiveness of multi-tier membership strategy
---   - Identifies opportunities for member upgrades and retention
---   - Supports ROI calculation for loyalty program investments
--- DECISION SUPPORT:
---   - Allocate marketing budget based on member distribution
---   - Design tier-specific benefits to drive upgrades
---   - Calculate cost-benefit of each membership tier
--- ============================================================================
--- 11. Get loyalty membership breakdown by tier
-SELECT 
-    'Bronze' AS membership_tier,
-    COUNT(*) AS member_count
-FROM bronze
-UNION ALL
-SELECT 
-    'Silver',
-    COUNT(*)
-FROM silver
-UNION ALL
-SELECT 
-    'Gold',
-    COUNT(*)
-FROM gold
-ORDER BY 
-    CASE 
-        WHEN membership_tier = 'Gold' THEN 1
-        WHEN membership_tier = 'Silver' THEN 2
-        WHEN membership_tier = 'Bronze' THEN 3
-    END;
+-- Basic 10: Customers with failed payment attempts
+SELECT -- 2.5 2 2 3.5 2.5 = 2.5
+    pt.customer_ID,
+    COUNT(*) AS failed_payments,
+    ROUND((DATEDIFF(NOW(), c.date_of_birth)/365),0) AS Age
+FROM payment_transaction pt
+join customer c on pt.customer_ID = c.customer_ID
+WHERE pt.status = 'Failed'
+GROUP BY pt.customer_ID
+ORDER BY Age DESC;
 
--- ============================================================================
--- QUERY 12: CUSTOMER ENGAGEMENT & ACTIVITY MONITORING
--- ============================================================================
--- BUSINESS VALUE:
---   - Monitors customer engagement through login activity
---   - Identifies dormant customers requiring reactivation campaigns
---   - Tracks purchase frequency and customer lifecycle stage
---   - Predicts churn risk based on login and purchase patterns
--- DECISION SUPPORT:
---   - Segment customers for targeted reactivation campaigns
---   - Identify most engaged customers for referral programs
---   - Monitor impact of marketing initiatives on login frequency
--- ============================================================================
--- 12. Display customer with their latest login and orders
-SELECT 
-    c.customer_ID,
-    CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
-    c.last_login_date,
-    COUNT(o.order_ID) AS lifetime_orders,
-    MAX(o.order_date) AS last_order_date
-FROM customer c
-LEFT JOIN orders o ON c.customer_ID = o.customer_ID
-WHERE c.last_login_date IS NOT NULL
-GROUP BY c.customer_ID, c.first_name, c.last_name, c.last_login_date
-ORDER BY c.last_login_date DESC;
+-- Basic 11: Active promotions (current date between start and end)
+SELECT -- 4 4 4 4 4 4 = 4
+    code,
+    product_ID,
+    discount_type,
+    discount_value,
+    start_date,
+    end_date
+FROM promotion
+WHERE start_date <= NOW() AND end_date >= NOW()
+ORDER BY end_date ASC;
 
--- ======================================================================
+-- Basic 12: Average rating per product (join order_products -> review)
+SELECT -- advance -- 5 4.5 4.5 5 4.5 5 = 4.75
+    p.product_ID,
+    p.product_name,
+    ROUND(AVG(r.rating),2) AS avg_rating,
+    COUNT(r.review_ID) AS review_count
+FROM products p
+JOIN order_products op ON p.product_ID = op.product_ID
+JOIN review r ON op.review_ID = r.review_ID
+GROUP BY p.product_ID, p.product_name
+HAVING review_count > 0
+ORDER BY avg_rating DESC, review_count DESC;
+
 -- PART 2: 12 ADVANCED MEANINGFUL QUERIES
--- ======================================================================
 
--- ============================================================================
--- ADVANCED QUERY 1: CUSTOMER SEGMENTATION FOR TARGETED MARKETING
--- ============================================================================
--- BUSINESS VALUE:
---   - Performs RFM (Recency, Frequency, Monetary) analysis for customer segmentation
---   - Enables precision marketing with tailored messaging for each segment
---   - Optimizes marketing spend by prioritizing high-value customers
---   - Supports CLV (Customer Lifetime Value) predictions and optimization
--- KEY METRICS:
---   - VIP: Customers with >$5,000 lifetime value (top priority)
---   - Premium: Customers with $2,000-$5,000 lifetime value (growth potential)
---   - Regular: Customers with <$2,000 lifetime value (volume focus)
--- BUSINESS IMPACT:
---   - Allocate 60% of marketing budget to VIP & Premium segments
---   - Design tier-specific product recommendations
---   - Create early warning system for VIP churn prevention
--- ============================================================================
--- 1. Customer Segmentation: Identify VIP customers with high spending
-SELECT 
-    c.customer_ID,
-    CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
-    c.email,
-    COUNT(o.order_ID) AS total_orders,
-    SUM(o.order_total) AS lifetime_value,
-    AVG(o.order_total) AS avg_order_value,
-    CASE 
-        WHEN SUM(o.order_total) > 5000 THEN 'VIP'
-        WHEN SUM(o.order_total) > 2000 THEN 'Premium'
-        ELSE 'Regular'
-    END AS customer_segment,
-    DATEDIFF(NOW(), c.registration_date) AS days_as_customer
-FROM customer c
-LEFT JOIN orders o ON c.customer_ID = o.customer_ID
-GROUP BY c.customer_ID, c.first_name, c.last_name, c.email, c.registration_date
-HAVING COUNT(o.order_ID) > 0
-ORDER BY lifetime_value DESC;
+-- Advanced 1: Customers who placed orders but have no paid invoices
+-- (identify customers with outstanding billing or missing invoices)
+SELECT DISTINCT -- 2.5 1.5 3 2 ? ? = 2.25
+    o.customer_ID,
+    CONCAT(c.first_name,' ',c.last_name) AS customer_name,
+    o.order_ID
+FROM orders o
+JOIN customer c ON o.customer_ID = c.customer_ID
+LEFT JOIN invoice i ON o.order_ID = i.order_ID AND i.status = 'Paid' -- AND i.status != 'Cancelled'
+WHERE i.invoice_ID IS NULL
+ORDER BY o.customer_ID;
 
--- ============================================================================
--- ADVANCED QUERY 2: PRODUCT PROFITABILITY & SALES PERFORMANCE
--- ============================================================================
--- BUSINESS VALUE:
---   - Analyzes product-level profitability and sales effectiveness
---   - Identifies top-performing products driving business revenue
---   - Supports SKU rationalization decisions (keep, discontinue, expand)
---   - Enables pricing optimization based on demand patterns
--- KEY METRICS:
---   - Total Revenue: Indicates product importance to business
---   - Revenue per Order: Shows customer willingness to buy
---   - Total Units Sold: Volume indicator for popular products
--- BUSINESS IMPACT:
---   - Focus marketing on top 20% of products generating 80% of revenue
---   - Implement dynamic pricing for high-demand products
---   - Bundle low-revenue with high-revenue products
--- ============================================================================
--- 2. Product Performance Analysis: Revenue per product
-SELECT 
+-- Advanced 2: Top customers by lifetime invoice total (lifetime value)
+SELECT -- 2 3.5 2 3.5 3.5 3.5 = 3
+    i.customer_ID,
+    CONCAT(c.first_name,' ',c.last_name) AS customer_name,
+    ROUND(SUM(i.total_amount),2) AS lifetime_value,
+    COUNT(DISTINCT i.order_ID) AS invoice_count
+FROM invoice i
+JOIN customer c ON i.customer_ID = c.customer_ID
+GROUP BY i.customer_ID
+ORDER BY lifetime_value DESC
+LIMIT 20;
+
+-- Advanced 3: Most-ordered products (popularity) with department
+SELECT -- 4 4 4.5 3.75  4 4 = 4
     p.product_ID,
     p.product_name,
     d.department,
-    COUNT(DISTINCT op.order_ID) AS orders_containing_product,
-    SUM(op.quantity) AS total_units_sold,
-    ROUND(SUM(op.quantity * op.price), 2) AS total_revenue,
-    ROUND(AVG(op.price), 2) AS avg_selling_price,
-    ROUND(SUM(op.quantity * op.price) / COUNT(DISTINCT op.order_ID), 2) AS revenue_per_order
+    COUNT(op.order_ID) AS orders_containing_product
 FROM products p
 JOIN order_products op ON p.product_ID = op.product_ID
-JOIN departments d ON p.department_ID = d.department_ID
+LEFT JOIN departments d ON p.department_ID = d.department_ID
 GROUP BY p.product_ID, p.product_name, d.department
-ORDER BY total_revenue DESC
-LIMIT 20;
+ORDER BY orders_containing_product DESC
+LIMIT 30;
 
--- ============================================================================
--- ADVANCED QUERY 3: SEASONALITY & DEMAND FORECASTING INSIGHTS
--- ============================================================================
--- BUSINESS VALUE:
---   - Identifies seasonal patterns and cyclical demand variations
---   - Enables accurate demand forecasting for inventory planning
---   - Supports workforce planning around peak seasons
---   - Identifies opportunities for off-season promotions
--- KEY METRICS:
---   - Monthly revenue trends reveal peak and low seasons
---   - Average order value trends indicate customer spending patterns
---   - Customer acquisition patterns show seasonal marketing effectiveness
--- BUSINESS IMPACT:
---   - Build inventory ahead of peak seasons
---   - Plan promotional discounts during low seasons
---   - Adjust staffing levels based on seasonal order patterns
--- ============================================================================
--- 3. Seasonal Trend Analysis: Orders by month for the past year
-SELECT 
-    DATE_TRUNC(o.order_date, MONTH) AS order_month,
-    COUNT(o.order_ID) AS total_orders,
-    SUM(o.order_total) AS monthly_revenue,
-    ROUND(AVG(o.order_total), 2) AS avg_order_value,
-    COUNT(DISTINCT o.customer_ID) AS unique_customers
-FROM orders o
-WHERE o.order_date >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
-GROUP BY DATE_TRUNC(o.order_date, MONTH)
-ORDER BY order_month DESC;
-
--- ============================================================================
--- ADVANCED QUERY 4: SERVICE LEVEL AGREEMENT (SLA) COMPLIANCE
--- ============================================================================
--- BUSINESS VALUE:
---   - Measures on-time delivery performance against SLAs
---   - Critical metric for customer satisfaction and retention
---   - Identifies seasonal delivery challenges
---   - Supports logistics partner performance reviews
--- KEY METRICS:
---   - On-time percentage: Direct indicator of service quality
---   - Monthly trends: Identify periods requiring additional resources
--- TARGET: Maintain >95% on-time delivery rate
--- BUSINESS IMPACT:
---   - Negotiate penalties/bonuses with logistics partners based on performance
---   - Invest in delivery infrastructure during low-performance periods
---   - Use performance data in customer communications
--- ============================================================================
--- 4. Delivery Performance Metrics: On-time delivery rate by month
-SELECT 
+-- Advanced 4: late delivery rate by month
+-- On-time defined as actual_delivery_date > scheduled_date
+SELECT -- 4 4.5 4.5 4 5 4 = 4.5
     DATE_FORMAT(d.scheduled_date, '%Y-%m') AS delivery_month,
     COUNT(*) AS total_deliveries,
-    SUM(CASE WHEN d.status = 'Delivered' THEN 1 ELSE 0 END) AS delivered,
-    SUM(CASE WHEN d.status = 'Delivered' AND d.actual_delivery_date <= d.scheduled_date THEN 1 ELSE 0 END) AS on_time_deliveries,
-    ROUND(
-        (SUM(CASE WHEN d.status = 'Delivered' AND d.actual_delivery_date <= d.scheduled_date THEN 1 ELSE 0 END) / 
-         SUM(CASE WHEN d.status = 'Delivered' THEN 1 ELSE 0 END) * 100), 2
-    ) AS on_time_percentage
+    SUM(CASE WHEN d.actual_delivery_date IS NOT NULL
+                        AND d.actual_delivery_date > d.scheduled_date THEN 1 ELSE 0 END) AS late_delivery_count,
+    ROUND(100 * SUM(CASE WHEN d.actual_delivery_date IS NOT NULL
+                        AND d.actual_delivery_date > d.scheduled_date THEN 1 ELSE 0 END) / COUNT(*),2) AS late_delivery_percentage
 FROM delivery d
 WHERE d.status = 'Delivered'
 GROUP BY DATE_FORMAT(d.scheduled_date, '%Y-%m')
 ORDER BY delivery_month DESC;
 
--- ============================================================================
--- ADVANCED QUERY 5: PAYMENT METHOD TRENDS & CASH FLOW ANALYSIS
--- ============================================================================
--- BUSINESS VALUE:
---   - Analyzes payment method preferences and transaction patterns
---   - Supports cash flow forecasting and payment reconciliation
+-- Advanced 5: Customers at risk of churn: no invoice in last 30 days and last login > 30 days
+SELECT -- Same as the basic one
+    c.customer_ID,
+    CONCAT(c.first_name,' ',c.last_name) AS customer_name,
+    MAX(i.invoice_date) AS last_invoice_date,
+    c.last_login_date
+FROM customer c
+LEFT JOIN orders o ON c.customer_ID = o.customer_ID
+LEFT JOIN invoice i ON o.order_ID = i.order_ID
+GROUP BY c.customer_ID, c.first_name, c.last_name, c.last_login_date
+HAVING (last_invoice_date IS NULL OR DATEDIFF(NOW(), last_invoice_date) > 30)
+     AND (c.last_login_date IS NULL OR DATEDIFF(NOW(), c.last_login_date) > 30)
+ORDER BY last_invoice_date ASC;
+
+-- Advanced 6: Inventory turnover proxy: number of orders containing product / average quantity_on_hand
+-- Note: inventory_record may contain multiple records per product; use AVG(quantity_on_hand)
+SELECT -- 5 5 5 5 5 5 = 5
+    p.product_ID,
+    p.product_name,
+    COUNT(DISTINCT op.order_ID) AS orders_with_product,
+    IFNULL(ROUND(AVG(ir.quantity_on_hand),2),0) AS avg_quantity_on_hand,
+    CASE WHEN AVG(ir.quantity_on_hand) > 0 THEN ROUND(COUNT(DISTINCT op.order_ID) / AVG(ir.quantity_on_hand), 4)
+             ELSE NULL END AS turnover_proxy
+FROM products p
+LEFT JOIN order_products op ON p.product_ID = op.product_ID
+LEFT JOIN inventory_record ir ON p.product_ID = ir.product_ID
+GROUP BY p.product_ID, p.product_name
+ORDER BY turnover_proxy DESC
+LIMIT 50;
+
+-- Advanced 7: Products never ordered (potential dead SKUs)
+SELECT -- 4.5 4 4 4 4 4 = 4
+    p.product_ID,
+    p.product_name,
+    d.department
+FROM products p
+LEFT JOIN order_products op ON p.product_ID = op.product_ID
+LEFT JOIN departments d ON p.department_ID = d.department_ID -- delete to be basic
+WHERE op.order_ID IS NULL
+ORDER BY p.product_ID;
+
+-- Advanced 8: Customers with multiple addresses (household / multi-location)
+SELECT -- 1 1 1 1 1 1 = 1
+    a.customer_ID,
+    CONCAT(c.first_name,' ',c.last_name) AS customer_name,
+    COUNT(*) AS address_count
+FROM address a
+JOIN customer c ON a.customer_ID = c.customer_ID
+GROUP BY a.customer_ID
+HAVING address_count > 1
+ORDER BY address_count DESC;
+
+-- Advanced 9: Payment status trends: monthly success vs failed counts
+SELECT -- 1 1 1 1 1 1 1 = 1
+    DATE_FORMAT(payment_date, '%Y-%m') AS month,
+    SUM(CASE WHEN status = 'Successful' THEN 1 ELSE 0 END) AS successful_payments,
+    SUM(CASE WHEN status = 'Failed' THEN 1 ELSE 0 END) AS failed_payments,
+    SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) AS pending_payments
+FROM payment_transaction
+GROUP BY DATE_FORMAT(payment_date, '%Y-%m')
+ORDER BY month DESC;
+
+-- Advanced 10: Promotion effectiveness: count of distinct orders that included promoted products during promotion window
+SELECT -- 3.5 3.5 ? 3 3.5 = 3.5?
+    pr.code,
+    pr.product_ID,
+    p.product_name,
+    pr.start_date,
+    pr.end_date,
+    COUNT(DISTINCT op.order_ID) AS orders_with_promo_product
+FROM promotion pr
+JOIN products p ON pr.product_ID = p.product_ID
+LEFT JOIN order_products op ON pr.product_ID = op.product_ID
+LEFT JOIN orders o ON op.order_ID = o.order_ID
+WHERE op.order_ID IS NOT NULL
+    AND pr.start_date <= NOW()  -- optional: limit to past/current promotions
+    AND pr.end_date >= NOW()
+GROUP BY pr.code, pr.product_ID, p.product_name, pr.start_date, pr.end_date
+ORDER BY orders_with_promo_product DESC;
+
+-- Advanced 11: Loyalty program impact: average invoice total for members vs non-members
+SELECT -- 5 5 5 5 5 5  = 5
+    lm.tier_level AS tier,
+    ROUND(AVG(i.total_amount),2) AS avg_invoice_amount,
+    COUNT(DISTINCT i.invoice_ID) AS invoice_count
+FROM loyalty_membership lm
+JOIN customer c ON lm.customer_ID = c.customer_ID
+JOIN orders o ON c.customer_ID = o.customer_ID
+JOIN invoice i ON o.order_ID = i.order_ID
+WHERE lm.status = 'Active'
+GROUP BY lm.tier_level
+UNION ALL
+SELECT
+    'Non-member',
+    ROUND(AVG(i2.total_amount),2),
+    COUNT(DISTINCT i2.invoice_ID)
+FROM customer c2
+LEFT JOIN loyalty_membership lm2 ON c2.customer_ID = lm2.customer_ID
+JOIN orders o2 ON c2.customer_ID = o2.customer_ID
+JOIN invoice i2 ON o2.order_ID = i2.order_ID
+WHERE lm2.membership_ID IS NULL
+ORDER BY avg_invoice_amount DESC;
+
+-- Advanced 12: Reviews vs invoice amount: compare average invoice amount for highly-rated orders (rating >=4) vs low-rated
+SELECT --???????
+    rating_bucket,
+    ROUND(AVG(total_amount),2) AS avg_invoice_amount,
+    COUNT(*) AS sample_size
+FROM (
+    SELECT
+        CASE WHEN r.rating >= 4 THEN 'High (rating >= 4)' ELSE 'Low' END AS rating_bucket,
+        i.total_amount
+    FROM order_products op
+    JOIN review r ON op.review_ID = r.review_ID
+    JOIN orders o ON op.order_ID = o.order_ID
+    JOIN invoice i ON o.order_ID = i.order_ID
+) t
+GROUP BY rating_bucket
+ORDER BY rating_bucket DESC;
+
 --   - Identifies opportunities for payment processing optimization
 --   - Helps assess fraud risk by payment method
 -- KEY METRICS:
@@ -480,7 +378,7 @@ ORDER BY delivery_month DESC;
 --   - Implement additional fraud checks for high-risk methods
 -- ============================================================================
 -- 5. Payment Analysis: Transaction patterns by payment method
-SELECT 
+SELECT -- 0 0 0 0 0 0 0 0 0 0 
     pt.payment_method,
     COUNT(pt.payment_ID) AS total_transactions,
     SUM(pt.amount) AS total_amount,
