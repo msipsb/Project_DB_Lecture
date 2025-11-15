@@ -27,7 +27,8 @@ JOIN order_products op ON p.product_ID = op.product_ID
 JOIN review r ON op.review_ID = r.review_ID
 GROUP BY p.product_ID, p.product_name
 HAVING review_count > 0
-ORDER BY avg_rating DESC, review_count DESC;
+ORDER BY avg_rating DESC, review_count DESC
+LIMIT 10;
 
 -- ## Query 3: Unpaid Invoice Detection
 -- **Score: 2.25/5 (Basic-Advanced hybrid)**
@@ -96,7 +97,13 @@ SELECT
     IFNULL(ROUND(AVG(ir.quantity_on_hand),2),0) AS avg_quantity_on_hand,
     CASE WHEN AVG(ir.quantity_on_hand) > 0 
          THEN ROUND(COUNT(DISTINCT op.order_ID) / AVG(ir.quantity_on_hand), 4)
-         ELSE NULL END AS turnover_proxy
+         ELSE NULL END AS turnover_proxy,
+    CASE 
+        WHEN COUNT(DISTINCT op.order_ID) / NULLIF(AVG(ir.quantity_on_hand), 0) >= 1.0 THEN 'High'
+        WHEN COUNT(DISTINCT op.order_ID) / NULLIF(AVG(ir.quantity_on_hand), 0) >= 0.5 THEN 'Medium'
+        WHEN COUNT(DISTINCT op.order_ID) / NULLIF(AVG(ir.quantity_on_hand), 0) IS NOT NULL THEN 'Low'
+        ELSE 'No Data'
+    END AS turnover_category
 FROM products p
 LEFT JOIN order_products op ON p.product_ID = op.product_ID
 LEFT JOIN inventory_record ir ON p.product_ID = ir.product_ID
@@ -115,7 +122,8 @@ FROM products p
 LEFT JOIN order_products op ON p.product_ID = op.product_ID
 LEFT JOIN departments d ON p.department_ID = d.department_ID
 WHERE op.order_ID IS NULL
-ORDER BY p.product_ID;
+ORDER BY p.product_ID
+LIMIT 10;
 
 -- ## Query 9: Active Promotion Effectiveness
 -- **Score: 3.5/5 (Advanced)**
